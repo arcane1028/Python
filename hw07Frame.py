@@ -575,6 +575,9 @@ def run_func(op_code_node):
         l_node = node.value.next
         var_name = l_node.value
         v_table[var_name] = run_expr(l_node.next)
+        lambda_table[var_name] = run_expr(l_node.next)
+        a = v_table
+        b = lambda_table
         return Node(TokenType.ID, var_name + " = " + v_table[var_name].__str__())
 
     def lambdas(node, con=False):
@@ -589,6 +592,7 @@ def run_func(op_code_node):
             iterator = formal.value
             param_iterator = param
             while iterator.next is not None:
+                adf = run_expr(param_iterator)
                 p = Node(1, param_iterator.value)
                 lambda_table[iterator.value] = run_expr(p, lambda_table)
                 iterator = iterator.next
@@ -643,9 +647,9 @@ def run_func(op_code_node):
 
     return table[op_code_node.value]
 
-def lookupTable(node, table):
+def lookupTable(node, table=v_table):
     if node.value in table:
-        return run_expr(table[node.value])
+        return run_expr(table[node.value], table)
     else:
         return node
 
@@ -663,7 +667,11 @@ def run_expr(root_node, table=v_table):
             node = lookupTable(root_node, table)
         return node
     elif root_node.type is TokenType.INT:
-        return root_node
+        if (root_node.value in lambda_table) and (table is v_table):
+            node = lookupTable(root_node, lambda_table)
+        else:
+            node = lookupTable(root_node, table)
+        return node
     elif root_node.type is TokenType.TRUE:
         return root_node
     elif root_node.type is TokenType.FALSE:
@@ -783,10 +791,11 @@ def Test_All():
     #Test_method("( define b ( - 5 2) )")
     #Test_method("( car a )")
     #Test_method("(define b ( + b 3 ))")
-    #Test_method("(define plus1 (lambda (x) (+ x 1) ) )")
+    Test_method("(define plus1 (lambda (x) (+ x 1) ) )")
     Test_method("( define a 1 )")
-    Test_method("( (lambda (a b c d e f g) ( - a (+ d g))) 9 10 5 3 4 2 1)")
-    #Test_method("(plus1 3)")
+    #Test_method("( (lambda (a b c d e f g) ( - a (+ d g))) 9 10 (x+5) 3 4 2 1)")
+    Test_method("(define plus2 (lambda (x) (- (plus1 x) 1))")
+    Test_method("(plus2 1)")
     #Test_method("(define cube ( lambda (n) (define sqrt (lambda (n) (* n n) ) )(* (sqrt n) n)))")
     interpreter()
 
