@@ -403,7 +403,9 @@ def run_func(op_code_node):
         l_node = run_expr(node.value.next)
         result = strip_quote(l_node).value
         if result.type is not TokenType.LIST:
-            return result
+            newnode = Node(TokenType.QUOTE)
+            newnode.next = result
+            return newnode
         return create_new_quote_list(result)
 
     def cdr(node):
@@ -574,7 +576,7 @@ def run_func(op_code_node):
         l_node = node.value.next
         var_name = l_node.value
         v_table[var_name] = run_expr(l_node.next)
-        return Node(TokenType.ID, var_name + " = " + v_table[var_name].__str__())
+        print var_name + " = " + print_node(v_table[var_name]),
 
     def lambdas(node, con=False):
         if con is True:
@@ -585,7 +587,7 @@ def run_func(op_code_node):
             statement = formal.next
             v_table[formal.value.value] = run_expr(param)
             temp = statement
-            while temp.next is not None :
+            while temp.next is not None:
                 run_expr(temp)
                 temp = temp.next
             return run_expr(temp)
@@ -732,6 +734,8 @@ def print_node(node):
         return 'not'
     if node.type is TokenType.QUOTE:
         return "'"+print_node(node.next)
+    if node.type is TokenType.DEFINE:
+        return "define"
 
 
 def Test_method(input):
@@ -754,7 +758,7 @@ def interpreter():
         Test_method(prompt)
 
 def Test_All():
-    '''
+
     Test_method("(+ 1 2 )")
     Test_method("(- ( + 1 2 ) 4 )")
     Test_method("(* 3 2 )")
@@ -766,26 +770,23 @@ def Test_All():
     Test_method("(null? '( 1 2 3) )")
     Test_method("(cond (#F 1) ( #T 2 ) )")
     Test_method("(cond ( ( null? ' ( 1 2 3 ) ) 1 ) ( ( > 100 10 ) 2 ) ( #T 3 ) )")
-    '''
-    #Test_method("( car '( a b c d ) )")
-    #Test_method("( define a '(2 3 4))")
-    #Test_method("( define b ( - 5 2) )")
-    #Test_method("( car a )")
-    #Test_method("(define b ( + b 3 ))")
+
+    Test_method("( car '( a b c d ) )")
+
+    Test_method("( define a '(2 3 4))")
+    Test_method("( define b ( - 5 2) )")
+
+    Test_method("(define b ( + b 3 ))")
     Test_method("(define plus1 (lambda (x) (+ x 1) ) )")
-    #Test_method("( + b 3 )")
-    #Test_method("( (lambda (x) ( - x x )) 9 )")
+    Test_method("( (lambda (x) ( - x x )) 9 )")
     Test_method("(define plus2 (lambda (x) (+ (plus1 x) 1 ) ) )")
     Test_method("(plus1 3)")
     Test_method("(plus2 3)")
-    #Test_method("(define cube ( lambda (n) (define sqrt (lambda (n) (* n n) ) )(* (sqrt n) n)))")
+
     Test_method("( define cube (lambda (n) (define sqrt ( lambda (n) (* n n) ) )(* (sqrt n) n))  )")
     Test_method("( cube 3 )")
-    # Test_method("( ( + 2 3 ) )")
     Test_method("( define lastitem (lambda (ls) (cond ((null? (cdr ls)) (car ls) )( #T (lastitem (cdr ls))))))")
     Test_method("( lastitem '(a b c d))")
-    #Test_method("(define a 5)")
-    #Test_method("(cdr '( 3 2 1 a))")
     interpreter()
 
 
