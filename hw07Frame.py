@@ -2,7 +2,7 @@
 from string import letters, digits, whitespace
 
 v_table={}
-
+lambda_table = {}
 class CuteType:
     INT = 1
     ID = 4
@@ -577,15 +577,26 @@ def run_func(op_code_node):
         v_table[var_name] = run_expr(l_node.next)
         return Node(TokenType.ID, var_name + " = " + v_table[var_name].__str__())
 
-    def lambdas(node , con=False):
+    def lambdas(node, con=False):
         if con is True:
             param = node.value.next
             if param is None:
                 return node
             formal = node.value.value.next
+
             statement = formal.next
-            v_table[formal.value.value] = run_expr(param)
-            return run_expr(statement)
+
+            iterator = formal.value
+            param_iterator = param
+            while iterator.next is not None:
+                p = Node(1, param_iterator.value)
+                lambda_table[iterator.value] = run_expr(p, lambda_table)
+                iterator = iterator.next
+                param_iterator = param_iterator.next
+            lambda_table[iterator.value] = run_expr(Node(1, param_iterator.value), lambda_table)
+            a = lambda_table;
+            b = v_table
+            return run_expr(statement, lambda_table)
         else:
             return node
 
@@ -646,7 +657,10 @@ def run_expr(root_node, table=v_table):
         return None
 
     if root_node.type is TokenType.ID:
-        node = lookupTable(root_node, table)
+        if (root_node.value in lambda_table) and (table is v_table):
+            node = lookupTable(root_node, lambda_table)
+        else:
+            node = lookupTable(root_node, table)
         return node
     elif root_node.type is TokenType.INT:
         return root_node
@@ -737,6 +751,7 @@ def Test_method(input):
     test_basic_paser = BasicPaser(test_tokens)
     node = test_basic_paser.parse_expr()
     cute_inter = run_expr(node)
+    lambda_table.clear()    #lambda_table clear
     print print_node(cute_inter)
 
 
@@ -752,27 +767,27 @@ def interpreter():
 
 def Test_All():
 
-    Test_method("(+ 1 2 )")
-    Test_method("(- ( + 1 2 ) 4 )")
-    Test_method("(* 3 2 )")
-    Test_method("(/ 10 2 )")
-    Test_method("(< 1 5 )")
-    Test_method("(= 3 ( + 1 2 ) )")
-    Test_method("(> 1 5 )")
-    Test_method("(not #F )")
-    Test_method("(null? '( 1 2 3) )")
-    Test_method("(cond (#F 1) ( #T 2 ) )")
-    Test_method("(cond ( ( null? ' ( 1 2 3 ) ) 1 ) ( ( > 100 10 ) 2 ) ( #T 3 ) )")
+    #Test_method("(+ 1 2 )")
+    #Test_method("(- ( + 1 2 ) 4 )")
+    #Test_method("(* 3 2 )")
+    #Test_method("(/ 10 2 )")
+    #Test_method("(< 1 5 )")
+    #Test_method("(= 3 ( + 1 2 ) )")
+    #Test_method("(> 1 5 )")
+    #Test_method("(not #F )")
+    #Test_method("(null? '( 1 2 3) )")
+    #Test_method("(cond (#F 1) ( #T 2 ) )")
+    #Test_method("(cond ( ( null? ' ( 1 2 3 ) ) 1 ) ( ( > 100 10 ) 2 ) ( #T 3 ) )")
 
-    Test_method("( define a '(2 3 4))")
-    Test_method("( define b ( - 5 2) )")
-    Test_method("( car a )")
-    Test_method("(define b ( + b 3 ))")
-    Test_method("(define plus1 (lambda (x) (+ x 1) ) )")
-    Test_method("( + b 3 )")
-    Test_method("( (lambda (x) ( - x x )) 9 )")
-    Test_method("(plus1 3)")
-    Test_method("(define cube ( lambda (n) (define sqrt (lambda (n) (* n n) ) )(* (sqrt n) n)))")
+    #Test_method("( define a '(2 3 4))")
+    #Test_method("( define b ( - 5 2) )")
+    #Test_method("( car a )")
+    #Test_method("(define b ( + b 3 ))")
+    #Test_method("(define plus1 (lambda (x) (+ x 1) ) )")
+    Test_method("( define a 1 )")
+    Test_method("( (lambda (a b c d e f g) ( - a (+ d g))) 9 10 5 3 4 2 1)")
+    #Test_method("(plus1 3)")
+    #Test_method("(define cube ( lambda (n) (define sqrt (lambda (n) (* n n) ) )(* (sqrt n) n)))")
     interpreter()
 
 
