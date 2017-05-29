@@ -90,7 +90,7 @@ class Token(object):
         else:
             self.type = type
             self.lexeme = lexeme
-        # print type
+            # print type
 
     def __str__(self):
         # return self.lexeme
@@ -576,7 +576,9 @@ def run_func(op_code_node):
         l_node = node.value.next
         var_name = l_node.value
         v_table[var_name] = run_expr(l_node.next)
-        print var_name + " = " + print_node(v_table[var_name]),
+        #print var_name + " = " + print_node(v_table[var_name]),
+
+    
 
     def lambdas(node, con=False):
         if con is True:
@@ -585,7 +587,16 @@ def run_func(op_code_node):
                 return node
             formal = node.value.value.next
             statement = formal.next
-            v_table[formal.value.value] = run_expr(param)
+
+
+            iterator = formal.value
+            param_iterator = param
+            while iterator.next is not None:
+                v_table[iterator.value] = run_expr(Node(param_iterator.type, param_iterator.value))
+                iterator = iterator.next
+                param_iterator = param_iterator.next
+            v_table[iterator.value] = run_expr(Node(param_iterator.type, param_iterator.value))
+
             temp = statement
             while temp.next is not None:
                 run_expr(temp)
