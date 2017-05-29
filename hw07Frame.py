@@ -578,6 +578,8 @@ def run_func(op_code_node):
         v_table[var_name] = run_expr(l_node.next)
         #print var_name + " = " + print_node(v_table[var_name]),
 
+    
+
     def lambdas(node, con=False):
         if con is True:
             param = node.value.next
@@ -586,6 +588,7 @@ def run_func(op_code_node):
             formal = node.value.value.next
             statement = formal.next
 
+
             iterator = formal.value
             param_iterator = param
             while iterator.next is not None:
@@ -593,6 +596,7 @@ def run_func(op_code_node):
                 iterator = iterator.next
                 param_iterator = param_iterator.next
             v_table[iterator.value] = run_expr(Node(param_iterator.type, param_iterator.value))
+
             temp = statement
             while temp.next is not None:
                 run_expr(temp)
