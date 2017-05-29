@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from string import letters, digits, whitespace
 
-v_table={}
+v_table = {}
 lambda_table = {}
+
 class CuteType:
     INT = 1
     ID = 4
@@ -89,7 +90,7 @@ class Token(object):
         else:
             self.type = type
             self.lexeme = lexeme
-        # print type
+            # print type
 
     def __str__(self):
         # return self.lexeme
@@ -352,7 +353,6 @@ def run_list(root_node):
     :type root_node: Node
     """
     op_code_node = root_node.value
-
     if op_code_node.type is TokenType.LIST:
         if op_code_node.value.type is TokenType.LAMBDA:
             return run_func(op_code_node.value)(root_node, True)
@@ -364,7 +364,6 @@ def run_list(root_node):
         return run_func(l_node.value)(newNode,True)
 
     return run_func(op_code_node)(root_node)
-
 
 def run_func(op_code_node):
     """
@@ -404,7 +403,9 @@ def run_func(op_code_node):
         l_node = run_expr(node.value.next)
         result = strip_quote(l_node).value
         if result.type is not TokenType.LIST:
-            return result
+            newnode = Node(TokenType.QUOTE)
+            newnode.next = result
+            return newnode
         return create_new_quote_list(result)
 
     def cdr(node):
@@ -565,7 +566,7 @@ def run_func(op_code_node):
         condition = run_expr(condition)
 
         if condition.type is TokenType.TRUE:
-            return result
+            return run_expr(result)
         elif condition.type is TokenType.FALSE:
             if node.next is not None:
                 return run_cond(node.next)
@@ -575,10 +576,7 @@ def run_func(op_code_node):
         l_node = node.value.next
         var_name = l_node.value
         v_table[var_name] = run_expr(l_node.next)
-        lambda_table[var_name] = run_expr(l_node.next)
-        a = v_table
-        b = lambda_table
-        return Node(TokenType.ID, var_name + " = " + v_table[var_name].__str__())
+        #print var_name + " = " + print_node(v_table[var_name]),
 
     def lambdas(node, con=False):
         if con is True:
@@ -586,21 +584,20 @@ def run_func(op_code_node):
             if param is None:
                 return node
             formal = node.value.value.next
-
             statement = formal.next
 
             iterator = formal.value
             param_iterator = param
             while iterator.next is not None:
-                adf = run_expr(param_iterator)
-                p = Node(1, param_iterator.value)
-                lambda_table[iterator.value] = run_expr(p, lambda_table)
+                v_table[iterator.value] = run_expr(Node(param_iterator.type, param_iterator.value))
                 iterator = iterator.next
                 param_iterator = param_iterator.next
-            lambda_table[iterator.value] = run_expr(Node(1, param_iterator.value), lambda_table)
-            a = lambda_table;
-            b = v_table
-            return run_expr(statement, lambda_table)
+            v_table[iterator.value] = run_expr(Node(param_iterator.type, param_iterator.value))
+            temp = statement
+            while temp.next is not None:
+                run_expr(temp)
+                temp = temp.next
+            return run_expr(temp)
         else:
             return node
 
@@ -647,9 +644,9 @@ def run_func(op_code_node):
 
     return table[op_code_node.value]
 
-def lookupTable(node, table=v_table):
+def lookupTable(node, table):
     if node.value in table:
-        return run_expr(table[node.value], table)
+        return run_expr(table[node.value])
     else:
         return node
 
@@ -661,17 +658,10 @@ def run_expr(root_node, table=v_table):
         return None
 
     if root_node.type is TokenType.ID:
-        if (root_node.value in lambda_table) and (table is v_table):
-            node = lookupTable(root_node, lambda_table)
-        else:
-            node = lookupTable(root_node, table)
+        node = lookupTable(root_node, table)
         return node
     elif root_node.type is TokenType.INT:
-        if (root_node.value in lambda_table) and (table is v_table):
-            node = lookupTable(root_node, lambda_table)
-        else:
-            node = lookupTable(root_node, table)
-        return node
+        return root_node
     elif root_node.type is TokenType.TRUE:
         return root_node
     elif root_node.type is TokenType.FALSE:
@@ -751,6 +741,8 @@ def print_node(node):
         return 'not'
     if node.type is TokenType.QUOTE:
         return "'"+print_node(node.next)
+    if node.type is TokenType.DEFINE:
+        return "define"
 
 
 def Test_method(input):
@@ -759,7 +751,6 @@ def Test_method(input):
     test_basic_paser = BasicPaser(test_tokens)
     node = test_basic_paser.parse_expr()
     cute_inter = run_expr(node)
-    lambda_table.clear()    #lambda_table clear
     print print_node(cute_inter)
 
 
@@ -775,28 +766,34 @@ def interpreter():
 
 def Test_All():
 
-    #Test_method("(+ 1 2 )")
-    #Test_method("(- ( + 1 2 ) 4 )")
-    #Test_method("(* 3 2 )")
-    #Test_method("(/ 10 2 )")
-    #Test_method("(< 1 5 )")
-    #Test_method("(= 3 ( + 1 2 ) )")
-    #Test_method("(> 1 5 )")
-    #Test_method("(not #F )")
-    #Test_method("(null? '( 1 2 3) )")
-    #Test_method("(cond (#F 1) ( #T 2 ) )")
-    #Test_method("(cond ( ( null? ' ( 1 2 3 ) ) 1 ) ( ( > 100 10 ) 2 ) ( #T 3 ) )")
+    Test_method("(+ 1 2 )")
+    Test_method("(- ( + 1 2 ) 4 )")
+    Test_method("(* 3 2 )")
+    Test_method("(/ 10 2 )")
+    Test_method("(< 1 5 )")
+    Test_method("(= 3 ( + 1 2 ) )")
+    Test_method("(> 1 5 )")
+    Test_method("(not #F )")
+    Test_method("(null? '( 1 2 3) )")
+    Test_method("(cond (#F 1) ( #T 2 ) )")
+    Test_method("(cond ( ( null? ' ( 1 2 3 ) ) 1 ) ( ( > 100 10 ) 2 ) ( #T 3 ) )")
 
-    #Test_method("( define a '(2 3 4))")
-    #Test_method("( define b ( - 5 2) )")
-    #Test_method("( car a )")
-    #Test_method("(define b ( + b 3 ))")
+    Test_method("( car '( a b c d ) )")
+
+    Test_method("( define a '(2 3 4))")
+    Test_method("( define b ( - 5 2) )")
+
+    Test_method("(define b ( + b 3 ))")
     Test_method("(define plus1 (lambda (x) (+ x 1) ) )")
-    Test_method("( define a 1 )")
-    #Test_method("( (lambda (a b c d e f g) ( - a (+ d g))) 9 10 (x+5) 3 4 2 1)")
-    Test_method("(define plus2 (lambda (x) (- (plus1 x) 1))")
-    Test_method("(plus2 1)")
-    #Test_method("(define cube ( lambda (n) (define sqrt (lambda (n) (* n n) ) )(* (sqrt n) n)))")
+    Test_method("( (lambda (x) ( - x x )) 9 )")
+    Test_method("(define plus2 (lambda (x) (+ (plus1 x) 1 ) ) )")
+    Test_method("(plus1 3)")
+    Test_method("(plus2 3)")
+
+    Test_method("( define cube (lambda (n) (define sqrt ( lambda (n) (* n n) ) )(* (sqrt n) n))  )")
+    Test_method("( cube 3 )")
+    Test_method("( define lastitem (lambda (ls) (cond ((null? (cdr ls)) (car ls) )( #T (lastitem (cdr ls))))))")
+    Test_method("( lastitem '(a b c d))")
     interpreter()
 
 
