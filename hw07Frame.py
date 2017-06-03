@@ -36,9 +36,9 @@ class CuteType:
     ATOM_Q = 28
     NULL_Q = 29
     EQ_Q = 30
-
+    SEE = 31
     KEYWORD_LIST = ('define', 'lambda', 'cond', 'quote', 'not', 'car', 'cdr', 'cons',
-                    'atom?', 'null?', 'eq?')
+                    'atom?', 'null?', 'eq?', 'see')
 
     BINARYOP_LIST = (DIV, TIMES, MINUS, PLUS, LT, GT, EQ)
     BOOLEAN_LIST = (TRUE, FALSE)
@@ -67,7 +67,8 @@ def _get_keyword_type(token):
         'cons': CuteType.CONS,
         'atom?': CuteType.ATOM_Q,
         'null?': CuteType.NULL_Q,
-        'eq?': CuteType.EQ_Q
+        'eq?': CuteType.EQ_Q,
+        'see': CuteType.SEE
     }[token]
 
 
@@ -238,6 +239,7 @@ class TokenType():
     ATOM_Q = 28
     NULL_Q = 29
     EQ_Q = 30
+    SEE = 31
 
 NODETYPE_NAMES = dict((eval(attr, globals(), TokenType.__dict__), attr) for attr in dir(
     TokenType()) if not callable(attr) and not attr.startswith('__'))
@@ -403,9 +405,7 @@ def run_func(op_code_node):
         l_node = run_expr(node.value.next)
         result = strip_quote(l_node).value
         if result.type is not TokenType.LIST:
-            newnode = Node(TokenType.QUOTE)
-            newnode.next = result
-            return newnode
+            return result
         return create_new_quote_list(result)
 
     def cdr(node):
@@ -576,34 +576,44 @@ def run_func(op_code_node):
         l_node = node.value.next
         var_name = l_node.value
         v_table[var_name] = run_expr(l_node.next)
-        #print var_name + " = " + print_node(v_table[var_name]),
+        return Node(TokenType.ID, var_name + " = " + v_table[var_name].__str__())
 
-    
+    def see(node):
+        for c in v_table:
+            print (c + ":"),; print(v_table[c])
+        return node
 
     def lambdas(node, con=False):
         if con is True:
-            param = node.value.next
+            #ex) ( ( lambda (x y z) ( + x ( - y z ) ) 2 3 4 )
+            param = node.value.next # 2 3 4
             if param is None:
                 return node
-            formal = node.value.value.next
-            statement = formal.next
+            formal = node.value.value.next # (x y z)( + x ( - y z) )
+            statement = formal.next # ( + x ( - y z ) )
 
-
-            iterator = formal.value
-            param_iterator = param
-            while iterator.next is not None:
-                v_table[iterator.value] = run_expr(Node(param_iterator.type, param_iterator.value))
-                iterator = iterator.next
-                param_iterator = param_iterator.next
-            v_table[iterator.value] = run_expr(Node(param_iterator.type, param_iterator.value))
+            iterator = formal.value # x -> y -> z
+            param_iterator(iterator, param)
 
             temp = statement
-            while temp.next is not None:
-                run_expr(temp)
-                temp = temp.next
+            temp = body_iterator(temp)
             return run_expr(temp)
         else:
             return node
+
+    def param_iterator(iter, param):
+        v_table[iter.value] = run_expr(Node(param.type, param.value))
+        if iter.next is not None:
+            # v_table[ x -> y -> z ] = run_expr(Node(TokenType.INT, 2 -> 3-> 4))
+            return param_iterator(iter.next, param.next)
+        else:
+            return
+    def body_iterator(body):
+        if body.next is not None:
+            run_expr(body)
+            return body_iterator(body.next)
+        else:
+            return body
 
     def create_new_quote_list(value_node, list_flag=False):
         """
@@ -645,6 +655,7 @@ def run_func(op_code_node):
     table['cond'] = cond
     table['define'] = define
     table['lambda'] = lambdas
+    table['see'] = see
 
     return table[op_code_node.value]
 
@@ -747,7 +758,8 @@ def print_node(node):
         return "'"+print_node(node.next)
     if node.type is TokenType.DEFINE:
         return "define"
-
+    if node.type is TokenType.SEE:
+        return "see"
 
 def Test_method(input):
     test_cute = CuteScanner(input)
@@ -770,7 +782,7 @@ def interpreter():
 
 def Test_All():
 
-    Test_method("(+ 1 2 )")
+    """Test_method("(+ 1 2 )")
     Test_method("(- ( + 1 2 ) 4 )")
     Test_method("(* 3 2 )")
     Test_method("(/ 10 2 )")
@@ -798,7 +810,44 @@ def Test_All():
     Test_method("( cube 3 )")
     Test_method("( define lastitem (lambda (ls) (cond ((null? (cdr ls)) (car ls) )( #T (lastitem (cdr ls))))))")
     Test_method("( lastitem '(a b c d))")
+    Test_method("(define square (lambda (x) (* x x)))")
+    Test_method("(define yourfunc (lambda (x func) (func x)))")
+    Test_method("(yourfunc 3 square)")
+    interpreter()"""
+
+    Test_method("(define a 1)")
+    Test_method("(define b '(1 2 3))")
+    Test_method("(define c (- 5 2))")
+    Test_method("(define d '(+ 2 3))")
+    Test_method("(define test b)")
+    Test_method("(+ a 3)")
+    Test_method("(define a 2)")
+    Test_method("(* a 4)")
+    Test_method("((lambda (x) (* x -2)) 3)")
+    Test_method("((lambda (x) (/ x 2)) a)")
+    Test_method("((lambda (x y) ( * x y)) 3 5)")
+    Test_method("((lambda (x y) ( * x y)) a 5)")
+    Test_method("(define plus1 (lambda (x) (+ x 1)))")
+    Test_method("(plus1 3)")
+    Test_method("(define mul1 (lambda (x) (* x a)))")
+    Test_method("(mul1 a)")
+    Test_method("(define plus2 (lambda (x) (+ (plus1 x) 1 )))")
+    Test_method("(plus2 4)")
+    Test_method("(define plus3 (lambda (x) (+ (plus1 x) a )))")
+    Test_method("(plus3 a")
+    Test_method("(define mul2 (lambda (x) (* (plus1 x) -2 )))")
+    Test_method("(mul2 7")
+    Test_method("(define lastitem (lambda (ls) (cond ((null? (cdr ls)) (car ls)) (#T (lastitem (cdr ls))))))")
+    Test_method("(lastitem '(1 2 3 4 5 6))")
+    Test_method("(define square (lambda (x) (* x x)))")
+    Test_method("(define yourfunc (lambda (x func) (func x))")
+    Test_method("(yourfunc 3 square)")
+    Test_method("(define square (lambda (x) (* x x)))")
+    Test_method("(define multwo (lambda (x) (* 2 x)))")
+    Test_method("(define newfun (lambda (fun1 fun2 x) (fun2 (fun1 x))))")
+    Test_method("(newfun square multwo 10)")
+    Test_method("(define cube (lambda (n) (define sqrt(lambda (n) (* n n))) (* (sqrt n) n)))")
+    Test_method("(cube 3)")
+    Test_method("(sqrt 4)")
     interpreter()
-
-
 Test_All()
