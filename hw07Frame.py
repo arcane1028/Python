@@ -3,6 +3,7 @@ from string import letters, digits, whitespace
 
 v_table = {}
 lambda_table = {}
+stack=[]
 
 class CuteType:
     INT = 1
@@ -586,6 +587,8 @@ def run_func(op_code_node):
     def lambdas(node, con=False):
         if con is True:
             #ex) ( ( lambda (x y z) ( + x ( - y z ) ) 2 3 4 )
+            local_table={}
+            stack.append(local_table)
             param = node.value.next # 2 3 4
             if param is None:
                 return node
@@ -597,7 +600,11 @@ def run_func(op_code_node):
 
             temp = statement
             temp = body_iterator(temp)
-            return run_expr(temp)
+            return_value = run_expr(temp)
+
+            stack.pop()
+
+            return return_value
         else:
             return node
 
