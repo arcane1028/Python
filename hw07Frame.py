@@ -3,7 +3,8 @@ from string import letters, digits, whitespace
 
 v_table = {}
 lambda_table = {}
-stack=[]
+stack = []
+depth = 0
 
 class CuteType:
     INT = 1
@@ -363,8 +364,8 @@ def run_list(root_node):
     if op_code_node.type is TokenType.ID:
         l_node = run_expr(op_code_node)
         l_node.next = op_code_node.next
-        newNode = Node(TokenType.LIST,l_node)
-        return run_func(l_node.value)(newNode,True)
+        newNode = Node(TokenType.LIST, l_node)
+        return run_func(l_node.value)(newNode, True)
 
     return run_func(op_code_node)(root_node)
 
@@ -492,7 +493,7 @@ def run_func(op_code_node):
             return Node(TokenType.ID, "is not int")
 
         result = int(l_node.value) * int(r_node.value)
-        return Node(TokenType.INT, result)
+        return Node(TokenType.INT, str(result))
 
     def divide(node):
         l_node = node.value.next
@@ -505,7 +506,7 @@ def run_func(op_code_node):
         if int(r_node.value) is 0:
             return Node(TokenType.ID, "division by 0")
         result = int(l_node.value) / int(r_node.value)
-        return Node(TokenType.INT, result)
+        return Node(TokenType.INT, str(result))
 
     def lt(node):
         l_node = node.value.next
@@ -576,8 +577,15 @@ def run_func(op_code_node):
     def define(node):
         l_node = node.value.next
         var_name = l_node.value
-        v_table[var_name] = run_expr(l_node.next)
-        return Node(TokenType.ID, var_name + " = " + v_table[var_name].__str__())
+        if depth >= len(stack):
+            a = {var_name: run_expr(l_node.next)}
+            stack.append(dict(a))
+        else:
+            stack[depth][var_name] = run_expr(l_node.next)
+            #print "test"
+        #item = stack[depth]
+        #print "item : ",item[var_name]
+        return Node(TokenType.ID, var_name + " = " + stack[depth][var_name].__str__())
 
     def see(node):
         for c in v_table:
@@ -587,6 +595,9 @@ def run_func(op_code_node):
     def lambdas(node, con=False):
         if con is True:
             #ex) ( ( lambda (x y z) ( + x ( - y z ) ) 2 3 4 )
+            global depth
+            depth += 1
+            #print "depth : ",depth
             local_table={}
             stack.append(local_table)
             param = node.value.next # 2 3 4
@@ -603,13 +614,13 @@ def run_func(op_code_node):
             return_value = run_expr(temp)
 
             stack.pop()
-
+            depth-=1
             return return_value
         else:
             return node
 
     def param_iterator(iter, param):
-        v_table[iter.value] = run_expr(Node(param.type, param.value))
+        stack[depth][iter.value] = run_expr(Node(param.type, param.value))
         if iter.next is not None:
             # v_table[ x -> y -> z ] = run_expr(Node(TokenType.INT, 2 -> 3-> 4))
             return param_iterator(iter.next, param.next)
@@ -666,13 +677,21 @@ def run_func(op_code_node):
 
     return table[op_code_node.value]
 
-def lookupTable(node, table):
-    if node.value in table:
-        return run_expr(table[node.value])
+def lookupTable(node):
+    if node.value in stack[depth]:
+        return run_expr(stack[depth][node.value])
     else:
-        return node
+        return lookupTable2(node, depth-1)
 
-def run_expr(root_node, table=v_table):
+def lookupTable2(node, index):
+    if index is -1:
+        return node
+    if node.value in stack[index]:
+        return run_expr(stack[index][node.value])
+    else:
+        return lookupTable2(node, index-1)
+
+def run_expr(root_node):
     """
     :type root_node : Node
     """
@@ -680,7 +699,7 @@ def run_expr(root_node, table=v_table):
         return None
 
     if root_node.type is TokenType.ID:
-        node = lookupTable(root_node, table)
+        node = lookupTable(root_node)
         return node
     elif root_node.type is TokenType.INT:
         return root_node
@@ -830,6 +849,7 @@ def Test_All():
     Test_method("(+ a 3)")
     Test_method("(define a 2)")
     Test_method("(* a 4)")
+
     Test_method("((lambda (x) (* x -2)) 3)")
     Test_method("((lambda (x) (/ x 2)) a)")
     Test_method("((lambda (x y) ( * x y)) 3 5)")
@@ -856,5 +876,6 @@ def Test_All():
     Test_method("(define cube (lambda (n) (define sqrt(lambda (n) (* n n))) (* (sqrt n) n)))")
     Test_method("(cube 3)")
     Test_method("(sqrt 4)")
+
     interpreter()
 Test_All()
