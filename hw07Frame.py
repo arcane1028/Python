@@ -577,7 +577,7 @@ def run_func(op_code_node):
     def define(node):
         l_node = node.value.next
         var_name = l_node.value
-        if depth >= len(stack):
+        if (depth >= len(stack)) is True:
             a = {var_name: run_expr(l_node.next)}
             stack.append(dict(a))
         else:
