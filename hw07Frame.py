@@ -357,6 +357,7 @@ def run_list(root_node):
     :type root_node: Node
     """
     op_code_node = root_node.value
+
     if op_code_node.type is TokenType.LIST:
         if op_code_node.value.type is TokenType.LAMBDA:
             return run_func(op_code_node.value)(root_node, True)
@@ -585,8 +586,8 @@ def run_func(op_code_node):
         return Node(TokenType.ID, var_name + " = " + stack[depth][var_name].__str__())
 
     def see(node):
-        for c in v_table:
-            print (c + ":"),; print(v_table[c])
+        for c in stack[depth]:
+            print (c + ":"),; print(stack[depth][c])
         return node
 
     def lambdas(node, con=False):
