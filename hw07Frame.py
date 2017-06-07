@@ -582,9 +582,6 @@ def run_func(op_code_node):
             stack.append(dict(a))
         else:
             stack[depth][var_name] = run_expr(l_node.next)
-            #print "test"
-        #item = stack[depth]
-        #print "item : ",item[var_name]
         return Node(TokenType.ID, var_name + " = " + stack[depth][var_name].__str__())
 
     def see(node):
@@ -597,7 +594,6 @@ def run_func(op_code_node):
             #ex) ( ( lambda (x y z) ( + x ( - y z ) ) 2 3 4 )
             global depth
             depth += 1
-            #print "depth : ",depth
             local_table={}
             stack.append(local_table)
             param = node.value.next # 2 3 4
@@ -875,7 +871,7 @@ def Test_All():
     Test_method("(newfun square multwo 10)")
     Test_method("(define cube (lambda (n) (define sqrt(lambda (n) (* n n))) (* (sqrt n) n)))")
     Test_method("(cube 3)")
-    Test_method("(sqrt 4)")
+    #Test_method("(sqrt 4)")
 
     interpreter()
 Test_All()
