@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from string import letters, digits, whitespace
 
-v_table = {}
-lambda_table = {}
 stack = []
 depth = 0
 
@@ -871,6 +869,7 @@ def Test_All():
     Test_method("(define newfun (lambda (fun1 fun2 x) (fun2 (fun1 x))))")
     Test_method("(newfun square multwo 10)")
     Test_method("(define cube (lambda (n) (define sqrt(lambda (n) (* n n))) (* (sqrt n) n)))")
+    Test_method("(define test22 (lambda (x) (define sub1 (define x 2) ( ) ) (de) )")
     Test_method("(cube 3)")
     #Test_method("(sqrt 4)")
 
